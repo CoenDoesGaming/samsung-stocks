@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="oneui_bg_black">#FF000000</color>
+    <color name="oneui_focus_block">#FF17171A</color>
+    <color name="oneui_focus_block_elevated">#FF222226</color>
+    <color name="oneui_pill_bg">#FF1E1E22</color>
+    <color name="oneui_floating_tab_bg">#E61C1C20</color>
+    <color name="oneui_divider">#FF26262A</color>
+    <color name="oneui_text_primary">#FFFFFFFF</color>
+    <color name="oneui_text_secondary">#FF8E8E93</color>
+    <color name="oneui_text_tertiary">#FF636366</color>
+    <color name="stock_red">#FFFF3B30</color>
+    <color name="stock_green">#FF30D158</color>
+    <color name="oneui_accent_blue">#FF387AFF</color>
+    <color name="widget_blur_tint">#2E18181D</color>
+</resources>

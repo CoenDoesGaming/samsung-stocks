@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- Alpha 0x2E (46, between 1..254) triggers Samsung One UI native frosted wallpaper blur -->
+    <solid android:color="#2E18181D" />
+    <corners android:radius="18dp" />
+</shape>

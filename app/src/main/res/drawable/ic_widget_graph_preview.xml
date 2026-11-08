@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="140dp"
+    android:height="36dp"
+    android:viewportWidth="140"
+    android:viewportHeight="36">
+    <!-- Dashed baseline matching Image 2 -->
+    <path
+        android:strokeColor="#66FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M2,8L8,8M13,8L19,8M24,8L30,8M35,8L41,8M46,8L52,8M57,8L63,8M68,8L74,8M79,8L85,8M90,8L96,8M101,8L107,8M112,8L118,8M123,8L129,8M134,8L138,8" />
+    <!-- Subtle fill area -->
+    <path
+        android:fillColor="#28FFFFFF"
+        android:pathData="M2,7 L14,8 L24,13 L38,16 L50,20 L64,19 L76,22 L88,21 L96,17 L108,21 L122,22 L138,22 L138,34 L2,34 Z" />
+    <!-- Sparkline curve -->
+    <path
+        android:strokeColor="#B3FFFFFF"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M2,7 L14,8 L24,13 L38,16 L50,20 L64,19 L76,22 L88,21 L96,17 L108,21 L122,22 L138,22" />
+</vector>

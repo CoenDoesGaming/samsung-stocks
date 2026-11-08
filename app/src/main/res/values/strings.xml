@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Stocks</string>
+
+    <!-- Lock Screen Widgets -->
+    <string name="widget_graph_small_label">Symbol with Graph</string>
+    <string name="widget_graph_small_desc">View price quotes and track performance of a symbol throughout the day.</string>
+
+    <string name="widget_symbol_tiny_label">Symbol (1x1)</string>
+    <string name="widget_symbol_tiny_desc">View price quotes and track performance of a symbol throughout the day.</string>
+
+    <string name="widget_symbol_small_label">Symbol (2x1)</string>
+    <string name="widget_symbol_small_desc">View price quotes and track performance of a symbol throughout the day. See news stories about this symbol, where available.</string>
+
+    <string name="widget_watchlist_small_label">Watchlist</string>
+    <string name="widget_watchlist_small_desc">View price quotes and track performance of a watchlist throughout the day. See news stories about symbols in this watchlist, where available.</string>
+
+    <!-- Home Screen Widgets (2x1, 2x2, 4x1, 4x2) -->
+    <string name="widget_home_2x1_label">Stock Pill (2x1)</string>
+    <string name="widget_home_2x1_desc">Compact 2x1 pill showing the selected Lock Screen symbol.</string>
+
+    <string name="widget_home_2x2_label">Stock Card (2x2)</string>
+    <string name="widget_home_2x2_desc">2x2 One UI card with symbol, graph, and price for your selected Lock Screen symbol.</string>
+
+    <string name="widget_home_4x1_label">Stock Wide Pill (4x1)</string>
+    <string name="widget_home_4x1_desc">4x1 wide pill showing symbol, sparkline, and live quote for your selected Lock Screen symbol.</string>
+
+    <string name="widget_home_4x2_label">Stock Large Card (4x2)</string>
+    <string name="widget_home_4x2_desc">4x2 large One UI card showing full quote and performance graph for your selected Lock Screen symbol.</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.OneUIStocks" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/oneui_bg_black</item>
+        <item name="android:navigationBarColor">@color/oneui_bg_black</item>
+        <item name="android:windowBackground">@color/oneui_bg_black</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="colorPrimary">@color/oneui_accent_blue</item>
+        <item name="colorPrimaryVariant">@color/oneui_bg_black</item>
+        <item name="colorOnPrimary">@color/oneui_text_primary</item>
+    </style>
+</resources>
