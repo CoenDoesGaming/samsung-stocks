@@ -5,69 +5,18 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!-- 1. Base One UI 7 Diagonal Gradient (Luminous Cyan-Blue Top-Left -> Rich Royal Blue -> Deep Indigo-Violet Bottom-Right) -->
     <path android:pathData="M0,0h108v108h-108z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:endX="96"
-                android:endY="98"
-                android:startX="12"
-                android:startY="10"
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108"
                 android:type="linear">
-                <item
-                    android:color="#FF2FC0FF"
-                    android:offset="0.0" />
-                <item
-                    android:color="#FF247BFF"
-                    android:offset="0.46" />
-                <item
-                    android:color="#FF3D3BF3"
-                    android:offset="0.78" />
-                <item
-                    android:color="#FF5E24D6"
-                    android:offset="1.0" />
+                <item android:color="#FF5FE6C4" android:offset="0.0" />
+                <item android:color="#FF1AA9F0" android:offset="0.5" />
+                <item android:color="#FF3448F2" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
-
-    <!-- 2. Top-Left Soft 3D Specular Glow (One UI 7 Squircle Lighting) -->
-    <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:centerX="24"
-                android:centerY="20"
-                android:gradientRadius="68"
-                android:type="radial">
-                <item
-                    android:color="#666BF0FF"
-                    android:offset="0.0" />
-                <item
-                    android:color="#2238C8FF"
-                    android:offset="0.55" />
-                <item
-                    android:color="#00247BFF"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-
-    <!-- 3. Bottom-Right Soft Depth Shading -->
-    <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:centerX="88"
-                android:centerY="92"
-                android:gradientRadius="64"
-                android:type="radial">
-                <item
-                    android:color="#4023076E"
-                    android:offset="0.0" />
-                <item
-                    android:color="#0023076E"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-
 </vector>
