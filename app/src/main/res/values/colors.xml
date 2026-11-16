@@ -12,5 +12,6 @@
     <color name="stock_red">#FFFF3B30</color>
     <color name="stock_green">#FF30D158</color>
     <color name="oneui_accent_blue">#FF387AFF</color>
+    <color name="oneui_accent_mint">#FF82DFB5</color>
     <color name="widget_blur_tint">#2E18181D</color>
 </resources>

@@ -14,6 +14,7 @@ object StockPreferences {
     private const val KEY_SORT_MODE = "sort_mode"
     private const val KEY_RECENT_SEARCHES = "recent_searches_json"
     private const val KEY_LAST_SYNC_MS = "last_sync_ms"
+    private const val KEY_WELCOME_SEEN = "welcome_seen"
 
     val DEFAULT_SYMBOLS = listOf(
         "AUDUSD=X",
@@ -601,5 +602,17 @@ object StockPreferences {
     fun getLastSyncTimeMs(context: Context): Long {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getLong(KEY_LAST_SYNC_MS, 0L)
+    }
+
+    fun isWelcomeSeen(context: Context): Boolean {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_WELCOME_SEEN, false)
+    }
+
+    fun setWelcomeSeen(context: Context, seen: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_WELCOME_SEEN, seen)
+            .apply()
     }
 }

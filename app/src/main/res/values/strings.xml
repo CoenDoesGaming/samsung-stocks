@@ -27,4 +27,14 @@
 
     <string name="widget_home_4x2_label">Stock Large Card (4x2)</string>
     <string name="widget_home_4x2_desc">4x2 large One UI card showing full quote and performance graph for your selected Lock Screen symbol.</string>
+
+    <!-- First-launch welcome screen -->
+    <string name="welcome_feature_track_title">Follow your markets</string>
+    <string name="welcome_feature_track_body">Track stocks, ETFs, and currency pairs in one watchlist. Search any symbol and arrange it your way.</string>
+    <string name="welcome_feature_detail_title">See the full picture</string>
+    <string name="welcome_feature_detail_body">Open any symbol for charts from one day to two years, key statistics, and the latest news.</string>
+    <string name="welcome_feature_widgets_title">Glance from anywhere</string>
+    <string name="welcome_feature_widgets_body">Add widgets to your Home and Lock screens to keep an eye on prices without opening the app.</string>
+    <string name="welcome_data_note">Market data provided by Yahoo Finance. Quotes may be delayed.</string>
+    <string name="welcome_start">Start</string>
 </resources>

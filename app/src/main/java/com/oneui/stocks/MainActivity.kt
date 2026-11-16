@@ -73,6 +73,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!StockPreferences.isWelcomeSeen(this)) {
+            startActivity(Intent(this, WelcomeActivity::class.java))
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_main)
 
         bindViews()
