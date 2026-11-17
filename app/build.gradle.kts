@@ -1,23 +1,45 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
 }
 
+// Release signing reads keystore.properties in the project root (not committed).
+// Without that file the release build falls back to the debug key, which is fine
+// for sideloading but is rejected by Google Play.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+}
+
 android {
-    namespace = "com.oneui.stocks"
+    namespace = "com.one.stocks"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.oneui.stocks"
+        applicationId = "com.one.stocks"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
 
+    signingConfigs {
+        if (keystorePropsFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 

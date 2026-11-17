@@ -1,4 +1,4 @@
-package com.oneui.stocks
+package com.one.stocks
 
 import android.content.Intent
 import android.content.res.ColorStateList

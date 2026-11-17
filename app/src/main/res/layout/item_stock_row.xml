@@ -62,7 +62,7 @@
         </LinearLayout>
 
         <!-- Center Column: Intraday Sparkline with Dashed Baseline & Gradient -->
-        <com.oneui.stocks.SparklineView
+        <com.one.stocks.SparklineView
             android:id="@+id/sparkline_view"
             android:layout_width="86dp"
             android:layout_height="40dp"

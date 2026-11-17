@@ -1,4 +1,4 @@
-package com.oneui.stocks
+package com.one.stocks
 
 import java.util.Locale
 import kotlin.math.abs

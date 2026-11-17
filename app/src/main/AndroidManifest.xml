@@ -50,7 +50,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="com.oneui.stocks.ACTION_AUTO_SYNC" />
+                <action android:name="com.one.stocks.ACTION_AUTO_SYNC" />
             </intent-filter>
         </receiver>
 
@@ -63,7 +63,7 @@
             android:label="@string/widget_graph_small_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -77,7 +77,7 @@
             android:label="@string/widget_symbol_tiny_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -91,7 +91,7 @@
             android:label="@string/widget_symbol_small_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -105,7 +105,7 @@
             android:label="@string/widget_watchlist_small_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -121,7 +121,7 @@
             android:label="@string/widget_home_2x1_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -135,7 +135,7 @@
             android:label="@string/widget_home_2x2_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -149,7 +149,7 @@
             android:label="@string/widget_home_4x1_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -163,7 +163,7 @@
             android:label="@string/widget_home_4x2_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.oneui.stocks.ACTION_REFRESH_WIDGET" />
+                <action android:name="com.one.stocks.ACTION_REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

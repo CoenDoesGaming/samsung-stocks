@@ -1,4 +1,4 @@
-package com.oneui.stocks
+package com.one.stocks
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

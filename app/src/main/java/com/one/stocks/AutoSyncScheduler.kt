@@ -1,4 +1,4 @@
-package com.oneui.stocks
+package com.one.stocks
 
 import android.app.job.JobInfo
 import android.app.job.JobScheduler

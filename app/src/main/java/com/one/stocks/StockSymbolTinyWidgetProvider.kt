@@ -1,4 +1,4 @@
-package com.oneui.stocks
+package com.one.stocks
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -6,14 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 
-class StockWatchlistSmallWidgetProvider : AppWidgetProvider() {
+class StockSymbolTinyWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
         for (appWidgetId in appWidgetIds) {
-            WidgetUpdateHelper.updateWatchlistSmallWidget(context, appWidgetManager, appWidgetId)
+            WidgetUpdateHelper.updateSymbolTinyWidget(context, appWidgetManager, appWidgetId)
         }
         val pendingResult = goAsync()
         WidgetUpdateHelper.refreshFromYahooAsync(context, pendingResult)
@@ -26,7 +26,7 @@ class StockWatchlistSmallWidgetProvider : AppWidgetProvider() {
         newOptions: Bundle
     ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-        WidgetUpdateHelper.updateWatchlistSmallWidget(context, appWidgetManager, appWidgetId)
+        WidgetUpdateHelper.updateSymbolTinyWidget(context, appWidgetManager, appWidgetId)
     }
 
     override fun onReceive(context: Context, intent: Intent) {

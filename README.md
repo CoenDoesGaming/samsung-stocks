@@ -1,6 +1,8 @@
-# Samsung Stocks (One UI Edition)
+# One Stocks
 
-A modern **Samsung One UI 7 / One UI 8** Stocks, ETF, and Forex tracker for Android, powered by **Yahoo Finance**, featuring native **Samsung One UI Lock Screen & AOD Blur Widgets** and **One UI Home Screen Widgets**.
+A modern Stocks, ETF, and Forex tracker for Android, designed for **Samsung One UI 7 / One UI 8** devices and powered by **Yahoo Finance**, featuring native **Samsung One UI Lock Screen & AOD Blur Widgets** and **One UI Home Screen Widgets**.
+
+> One Stocks is an independent project. It is not affiliated with, endorsed by, or sponsored by Samsung or Yahoo.
 
 ---
 

@@ -1,4 +1,4 @@
-package com.oneui.stocks
+package com.one.stocks
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -13,7 +13,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 object WidgetUpdateHelper {
-    const val ACTION_REFRESH_WIDGET = "com.oneui.stocks.ACTION_REFRESH_WIDGET"
+    const val ACTION_REFRESH_WIDGET = "com.one.stocks.ACTION_REFRESH_WIDGET"
     private val executor = Executors.newSingleThreadExecutor()
     private val isSyncInFlight = AtomicBoolean(false)
 
