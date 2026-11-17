@@ -25,10 +25,11 @@ class StockDetailChartView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private var prices: List<Float> = listOf(285.8f, 289.1f, 286.8f, 287.1f, 285.3f, 284.5f, 285.2f, 283.93f)
-    private var volumes: List<Long> = listOf(35L, 12L, 18L, 14L, 10L, 22L, 15L, 11L)
-    private var baselinePrice: Float = 283.5f
-    private var xLabels: List<String> = listOf("2", "3", "4", "5", "6", "7")
+    private var prices: List<Float> = emptyList()
+    private var volumes: List<Long> = emptyList()
+    private var baselinePrice: Float = 0f
+    private var xLabels: List<String> = emptyList()
+    private var message: String? = null
     private var pointLabels: List<String> = emptyList()
     private var isPositive: Boolean = true
     private var isForex: Boolean = false
@@ -127,8 +128,25 @@ class StockDetailChartView @JvmOverloads constructor(
         this.onScrubListener = listener
     }
 
+    /** Clears the chart and shows a short status line instead (e.g. loading or unavailable). */
+    fun showMessage(text: String) {
+        prices = emptyList()
+        volumes = emptyList()
+        xLabels = emptyList()
+        pointLabels = emptyList()
+        scrubIndex = -1
+        message = text
+        onScrubListener?.invoke(null, baselinePrice, null)
+        invalidate()
+    }
+
     fun setChartSeries(series: StockChartSeries, isForex: Boolean, forcePositive: Boolean? = null) {
-        this.prices = if (series.prices.size >= 2) series.prices else listOf(1f, 1f)
+        if (series.prices.size < 2) {
+            showMessage(context.getString(R.string.chart_unavailable))
+            return
+        }
+        this.message = null
+        this.prices = series.prices
         this.volumes = series.volumes
         this.baselinePrice = series.baselinePrice
         this.xLabels = series.xLabels
@@ -141,6 +159,7 @@ class StockDetailChartView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (prices.size < 2) return super.onTouchEvent(event)
         val rightAxisWidth = 48f * density
         val plotW = (width - rightAxisWidth).coerceAtLeast(1f)
         when (event.actionMasked) {
@@ -175,7 +194,14 @@ class StockDetailChartView @JvmOverloads constructor(
         super.onDraw(canvas)
         val w = width.toFloat()
         val h = height.toFloat()
-        if (w <= 10f || h <= 10f || prices.size < 2) return
+        if (w <= 10f || h <= 10f) return
+        if (prices.size < 2) {
+            message?.let {
+                val paint = Paint(axisTextPaint).apply { textAlign = Paint.Align.CENTER }
+                canvas.drawText(it, w / 2f, h / 2f, paint)
+            }
+            return
+        }
 
         val rightAxisWidth = 48f * density
         val xLabelsHeight = 25f * density

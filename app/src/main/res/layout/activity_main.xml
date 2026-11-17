@@ -228,7 +228,7 @@
                     android:layout_marginStart="24dp"
                     android:layout_marginTop="2dp"
                     android:layout_marginBottom="8dp"
-                    android:text="Big movers today"
+                    android:text="Your biggest movers today"
                     android:textColor="#FF96ABA2"
                     android:textSize="13.5sp"
                     android:textStyle="bold" />

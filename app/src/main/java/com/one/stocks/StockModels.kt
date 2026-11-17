@@ -60,20 +60,32 @@ data class StockQuote(
     val dayLow: Double,
     val volumeLabel: String,
     val sparkline: List<Float>,
-    val openPrice: Double = previousClose,
-    val afterHoursPrice: Double = price * 1.0018,
-    val afterHoursChangePercent: Double = 0.18,
+    val openPrice: Double = Double.NaN,
+    val afterHoursPrice: Double = Double.NaN,
+    val afterHoursChangePercent: Double = Double.NaN,
     val peRatioLabel: String = "--",
-    val fiftyTwoWeekHigh: Double = maxOf(dayHigh, price * 1.18),
-    val fiftyTwoWeekLow: Double = minOf(dayLow, price * 0.82),
-    val avgVolumeLabel: String = volumeLabel,
+    val fiftyTwoWeekHigh: Double = Double.NaN,
+    val fiftyTwoWeekLow: Double = Double.NaN,
+    val avgVolumeLabel: String = "--",
     val exchangeCurrencyLabel: String = ""
 ) {
+    /** False until a real price has been loaded from Yahoo Finance. */
+    val hasPrice: Boolean
+        get() = !price.isNaN() && price > 0.0
+
+    /** True only when Yahoo reported an extended-hours price for this symbol. */
+    val hasExtendedHoursPrice: Boolean
+        get() = !afterHoursPrice.isNaN() && afterHoursPrice > 0.0 && !afterHoursChangePercent.isNaN()
+
     val change: Double
         get() = price - previousClose
 
     val changePercent: Double
-        get() = if (previousClose != 0.0) ((price - previousClose) / previousClose) * 100.0 else 0.0
+        get() = if (hasPrice && !previousClose.isNaN() && previousClose > 0.0) {
+            ((price - previousClose) / previousClose) * 100.0
+        } else {
+            Double.NaN
+        }
 
     val isPositive: Boolean
         get() = price >= previousClose
@@ -90,10 +102,7 @@ data class StockQuote(
             isForex -> "CCY · FX"
             symbol.endsWith(".AX", ignoreCase = true) -> "ASX · AUD"
             symbol.endsWith("-USD", ignoreCase = true) -> "CCC · USD"
-            symbol.startsWith("^") -> "INDEX · US"
-            symbol in setOf("SPY", "VOO", "IVV", "VTI", "SCHD", "VUG", "IWM", "DIA", "ARKK", "GLD", "SLV") -> "NYSEArca · USD"
-            symbol in setOf("BRK-B", "LLY", "JPM", "V", "MA", "WMT", "CRM", "ORCL", "DIS", "UBER", "NKE", "BA") -> "NYSE · USD"
-            else -> "NASDAQ · USD"
+            else -> ""
         }
     }
 
@@ -111,7 +120,7 @@ data class StockQuote(
     }
 
     fun formatValue(v: Double): String {
-        if (v <= 0.0 || v.isNaN()) return formattedPriceFallback()
+        if (v.isNaN() || v <= 0.0) return NO_VALUE
         return when {
             isForex && v < 10.0 -> String.format(Locale.US, "%.4f", v).trimEnd('0').let {
                 if (it.substringAfter('.', "").length < 3) String.format(Locale.US, "%.3f", v) else it
@@ -121,11 +130,8 @@ data class StockQuote(
         }
     }
 
-    private fun formattedPriceFallback(): String {
-        return if (price > 0.0) String.format(Locale.US, "%.3f", price) else "0.00"
-    }
-
     fun formattedPrice(): String {
+        if (!hasPrice) return NO_VALUE
         return when {
             isForex && price < 10.0 -> String.format(Locale.US, "%.3f", price)
             price < 10.0 -> String.format(Locale.US, "%.3f", price)
@@ -136,12 +142,14 @@ data class StockQuote(
     fun formattedAfterHoursPrice(): String = formatValue(afterHoursPrice)
 
     fun formattedAfterHoursPercent(): String {
+        if (afterHoursChangePercent.isNaN()) return NO_VALUE
         val sign = if (afterHoursChangePercent >= 0.0) "+" else ""
         return String.format(Locale.US, "%s%.2f%%", sign, afterHoursChangePercent)
     }
 
     fun formattedChange(): String {
         val diff = change
+        if (diff.isNaN() || changePercent.isNaN()) return NO_VALUE
         val sign = if (diff >= 0.0) "+" else ""
         return if (isForex && price < 10.0) {
             if (abs(diff) < 0.0005 && abs(diff) > 0.00001) {
@@ -156,8 +164,13 @@ data class StockQuote(
 
     fun formattedPercentChange(): String {
         val pct = changePercent
+        if (pct.isNaN()) return NO_VALUE
         val sign = if (pct >= 0.0) "+" else ""
         return String.format(Locale.US, "%s%.2f%%", sign, pct)
+    }
+
+    companion object {
+        const val NO_VALUE = "--"
     }
 
     fun lockScreenChangeLabel(): String {

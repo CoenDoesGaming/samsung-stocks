@@ -1,5 +1,6 @@
 package com.one.stocks
 
+import android.util.Log
 import android.content.Context
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -11,10 +12,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.cos
-import kotlin.math.sin
 
 object YahooFinanceClient {
+    private const val TAG = "YahooFinanceClient"
+
     private const val USER_AGENT =
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
@@ -25,64 +26,6 @@ object YahooFinanceClient {
 
     fun getCachedChartSeries(quote: StockQuote, range: ChartRange): StockChartSeries? =
         chartCache[cacheKey(quote.symbol, range)]
-
-    private val KNOWN_MARKET_CAPS = mapOf(
-        "AAPL" to "4.975T",
-        "GOOG" to "3.491T",
-        "GOOGL" to "3.491T",
-        "MSFT" to "3.380T",
-        "NVDA" to "3.610T",
-        "AMZN" to "2.240T",
-        "META" to "1.520T",
-        "TSLA" to "1.110T",
-        "BRK-B" to "1.020T",
-        "AVGO" to "845.0B",
-        "LLY" to "780.0B",
-        "JPM" to "680.0B",
-        "V" to "610.0B",
-        "WMT" to "690.0B",
-        "NFLX" to "385.0B",
-        "AMD" to "245.0B",
-        "CBA.AX" to "254.2B",
-        "BHP.AX" to "208.4B",
-        "CSL.AX" to "138.5B",
-        "SPY" to "618.4B",
-        "VOO" to "562.1B",
-        "QQQ" to "314.8B",
-        "IVV" to "548.2B",
-        "VTI" to "468.9B",
-        "SCHD" to "64.8B",
-        "VAS.AX" to "17.4B",
-        "IVV.AX" to "10.2B",
-        "NDQ.AX" to "5.6B",
-        "VDHG.AX" to "2.5B"
-    )
-
-    private val KNOWN_PE_RATIOS = mapOf(
-        "GOOG" to "14.83",
-        "GOOGL" to "14.83",
-        "AAPL" to "31.40",
-        "MSFT" to "34.80",
-        "NVDA" to "46.20",
-        "AMZN" to "38.50",
-        "META" to "27.15",
-        "TSLA" to "64.10",
-        "BRK-B" to "21.40",
-        "AVGO" to "36.90",
-        "AMD" to "41.20",
-        "NFLX" to "43.60",
-        "JPM" to "13.20",
-        "V" to "29.80",
-        "WMT" to "35.10",
-        "SPY" to "27.40",
-        "VOO" to "27.40",
-        "QQQ" to "33.80",
-        "IVV" to "27.40",
-        "VTI" to "26.10",
-        "VAS.AX" to "18.60",
-        "CBA.AX" to "24.30",
-        "BHP.AX" to "14.90"
-    )
 
     // Built-in directory of popular Global, US & Australian Stocks, ETFs, FX, Indices & Crypto for 0ms instant search
     private val LOCAL_CATALOG = listOf(
@@ -208,14 +151,35 @@ object YahooFinanceClient {
                 }
             }
 
-            if (updated.isNotEmpty()) {
-                StockPreferences.saveQuotes(context, updated)
+            // Market cap, P/E, extended-hours price and average volume aren't in the chart
+            // response, so fetch them in one batch. Anything Yahoo doesn't return stays "--".
+            val stats = runCatching { fetchQuoteStatistics(updated.map { it.symbol }) }
+                .onFailure { Log.w(TAG, "Quote statistics fetch failed", it) }
+                .getOrDefault(emptyMap())
+            val merged = updated.map { q -> stats[q.symbol.uppercase()]?.let { q.withStatistics(it) } ?: q }
+
+            if (merged.isNotEmpty()) {
+                StockPreferences.saveQuotes(context, merged)
             }
 
             runCatching {
-                val news = fetchMarketNews("AUDUSD AAPL GOOG stocks market")
+                // Yahoo's search returns news for simple queries only, so ask per symbol
+                // (plus a general market query) and merge the results.
+                val queries = symbols
+                    .filterNot { it.contains("=") }
+                    .take(3) + "stock market"
+                val news = queries
+                    .flatMap { q ->
+                        runCatching { fetchMarketNews(q) }
+                            .onFailure { Log.w(TAG, "News fetch failed for \"$q\"", it) }
+                            .getOrDefault(emptyList())
+                    }
+                    .distinctBy { it.title }
+                    .take(12)
                 if (news.isNotEmpty()) {
                     StockPreferences.saveNewsItems(context, news)
+                } else {
+                    Log.w(TAG, "No news returned for $queries")
                 }
             }
 
@@ -233,23 +197,16 @@ object YahooFinanceClient {
         val resultObj = resultArr.getJSONObject(0)
         val meta = resultObj.getJSONObject("meta")
 
-        val price = meta.optDouble("regularMarketPrice", fallback?.price ?: 0.0)
+        val price = meta.optDouble("regularMarketPrice", Double.NaN)
         val prevClose = meta.optDouble(
             "chartPreviousClose",
-            meta.optDouble("previousClose", fallback?.previousClose ?: price)
+            meta.optDouble("previousClose", Double.NaN)
         )
-        val dayHigh = meta.optDouble("regularMarketDayHigh", fallback?.dayHigh ?: price)
-        val dayLow = meta.optDouble("regularMarketDayLow", fallback?.dayLow ?: price)
+        val dayHigh = meta.optDouble("regularMarketDayHigh", Double.NaN)
+        val dayLow = meta.optDouble("regularMarketDayLow", Double.NaN)
         val rawVolume = meta.optLong("regularMarketVolume", 0L)
-
-        val fiftyTwoHigh = meta.optDouble(
-            "fiftyTwoWeekHigh",
-            fallback?.fiftyTwoWeekHigh ?: maxOf(dayHigh, price * 1.18)
-        )
-        val fiftyTwoLow = meta.optDouble(
-            "fiftyTwoWeekLow",
-            fallback?.fiftyTwoWeekLow ?: minOf(dayLow, price * 0.82)
-        )
+        val fiftyTwoHigh = meta.optDouble("fiftyTwoWeekHigh", Double.NaN)
+        val fiftyTwoLow = meta.optDouble("fiftyTwoWeekLow", Double.NaN)
 
         val exchName = meta.optString("fullExchangeName", meta.optString("exchangeName", "")).trim()
         val currency = meta.optString("currency", "USD").trim()
@@ -264,7 +221,7 @@ object YahooFinanceClient {
         val exchCurrencyLabel = if (normalizedExch.isNotEmpty() && currency.isNotEmpty()) {
             "$normalizedExch · $currency"
         } else {
-            fallback?.resolvedExchangeCurrencyLabel() ?: "NASDAQ · USD"
+            ""
         }
 
         val rawName = meta.optString("shortName", meta.optString("longName", "")).trim()
@@ -272,21 +229,9 @@ object YahooFinanceClient {
             ?: rawName.ifEmpty { fallback?.name ?: cleanSymbol }
 
         val isFx = cleanSymbol.endsWith("=X") || displayName.contains("/")
-        val mktCap = when {
-            isFx -> "--"
-            KNOWN_MARKET_CAPS.containsKey(cleanSymbol) -> KNOWN_MARKET_CAPS.getValue(cleanSymbol)
-            fallback != null && fallback.marketCapLabel != "--" -> fallback.marketCapLabel
-            else -> "--"
-        }
-        val peLabel = when {
-            isFx -> "--"
-            KNOWN_PE_RATIOS.containsKey(cleanSymbol) -> KNOWN_PE_RATIOS.getValue(cleanSymbol)
-            fallback != null && fallback.peRatioLabel != "--" -> fallback.peRatioLabel
-            else -> "22.40"
-        }
 
         val sparkPoints = mutableListOf<Float>()
-        var openVal = fallback?.openPrice ?: prevClose
+        var openVal = Double.NaN
         val indicators = resultObj.optJSONObject("indicators")
         val quoteArr = indicators?.optJSONArray("quote")
         if (quoteArr != null && quoteArr.length() > 0) {
@@ -317,62 +262,129 @@ object YahooFinanceClient {
         if (price > 0.0) {
             sparkPoints.add(price.toFloat())
         }
-        val finalSpark = if (sparkPoints.size >= 2) {
-            sparkPoints
-        } else {
-            fallback?.sparkline ?: listOf(prevClose.toFloat(), price.toFloat())
-        }
+        val finalSpark = if (sparkPoints.size >= 2) sparkPoints else emptyList()
 
-        val resolvedPrevClose = when {
-            kotlin.math.abs(price - prevClose) >= 0.0001 && prevClose > 0.0 -> prevClose
-            finalSpark.isNotEmpty() && kotlin.math.abs(price - finalSpark.first().toDouble()) >= 0.0001 ->
-                finalSpark.first().toDouble()
-            fallback != null && kotlin.math.abs(price - fallback.previousClose) >= 0.0001 ->
-                fallback.previousClose
-            price > 0.0 -> price * 0.9965
-            else -> prevClose
-        }
+        val volStr = if (isFx) "24h FX" else formatCompactNumber(rawVolume)
 
-        val postPrice = meta.optDouble(
-            "postMarketPrice",
-            meta.optDouble("preMarketPrice", fallback?.afterHoursPrice ?: (price * 1.0018))
-        )
-        val postPct = if (price > 0.0 && postPrice > 0.0 && postPrice != price) {
-            ((postPrice - price) / price) * 100.0
-        } else {
-            fallback?.afterHoursChangePercent ?: 0.18
-        }
-
-        val volStr = if (isFx) "24h FX" else formatCompactNumber(rawVolume).let {
-            if (it == "--") fallback?.volumeLabel ?: "18.4M" else it
-        }
-        val avgVolStr = fallback?.avgVolumeLabel?.takeIf { it != "--" && it != "FX" }
-            ?: if (isFx) "24h FX" else formatCompactNumber((rawVolume * 0.85).toLong()).let {
-                if (it == "--") volStr else it
-            }
-
+        // Market cap, P/E, extended-hours price and average volume come from
+        // fetchQuoteStatistics(); until then they show as "--".
         return StockQuote(
             symbol = cleanSymbol,
             name = displayName,
             price = price,
-            previousClose = resolvedPrevClose,
-            marketCapLabel = mktCap,
+            previousClose = prevClose,
+            marketCapLabel = if (isFx) "--" else fallback?.marketCapLabel ?: "--",
             dayHigh = dayHigh,
             dayLow = dayLow,
             volumeLabel = volStr,
             sparkline = finalSpark,
             openPrice = openVal,
-            afterHoursPrice = if (postPrice > 0.0) postPrice else price * 1.0018,
-            afterHoursChangePercent = postPct,
-            peRatioLabel = peLabel,
+            afterHoursPrice = Double.NaN,
+            afterHoursChangePercent = Double.NaN,
+            peRatioLabel = if (isFx) "--" else fallback?.peRatioLabel ?: "--",
             fiftyTwoWeekHigh = fiftyTwoHigh,
             fiftyTwoWeekLow = fiftyTwoLow,
-            avgVolumeLabel = avgVolStr,
+            avgVolumeLabel = if (isFx) "24h FX" else fallback?.avgVolumeLabel ?: "--",
             exchangeCurrencyLabel = exchCurrencyLabel
         )
     }
 
-    fun fetchChartSeries(quote: StockQuote, range: ChartRange): StockChartSeries {
+    /** Live figures from Yahoo's quote endpoint that the chart endpoint doesn't include. */
+    data class QuoteStatistics(
+        val marketCap: Double,
+        val trailingPe: Double,
+        val postMarketPrice: Double,
+        val postMarketChangePercent: Double,
+        val averageVolume: Long,
+        val fiftyTwoWeekHigh: Double,
+        val fiftyTwoWeekLow: Double
+    )
+
+    private fun StockQuote.withStatistics(st: QuoteStatistics): StockQuote = copy(
+        marketCapLabel = if (isForex) "--" else formatMarketCap(st.marketCap),
+        peRatioLabel = if (isForex || st.trailingPe.isNaN() || st.trailingPe <= 0.0) {
+            "--"
+        } else {
+            String.format(Locale.US, "%.2f", st.trailingPe)
+        },
+        afterHoursPrice = st.postMarketPrice,
+        afterHoursChangePercent = st.postMarketChangePercent,
+        avgVolumeLabel = if (isForex) "24h FX" else formatCompactNumber(st.averageVolume),
+        fiftyTwoWeekHigh = if (fiftyTwoWeekHigh.isNaN()) st.fiftyTwoWeekHigh else fiftyTwoWeekHigh,
+        fiftyTwoWeekLow = if (fiftyTwoWeekLow.isNaN()) st.fiftyTwoWeekLow else fiftyTwoWeekLow
+    )
+
+    @Volatile
+    private var crumb: String? = null
+
+    init {
+        // Yahoo's quote endpoint needs a session cookie plus a matching "crumb" token.
+        if (java.net.CookieHandler.getDefault() == null) {
+            java.net.CookieHandler.setDefault(java.net.CookieManager())
+        }
+    }
+
+    private fun obtainCrumb(forceRefresh: Boolean): String {
+        if (!forceRefresh) crumb?.let { return it }
+        // This page answers 404 but sets the session cookie, so the status is ignored.
+        runCatching {
+            val conn = (URL("https://fc.yahoo.com/").openConnection() as HttpURLConnection).apply {
+                connectTimeout = 7000
+                readTimeout = 7000
+                instanceFollowRedirects = true
+                setRequestProperty("User-Agent", USER_AGENT)
+            }
+            try { conn.responseCode } finally { conn.disconnect() }
+        }
+        // The crumb is plain text; asking for JSON gets a 406.
+        val fresh = httpGet("https://query1.finance.yahoo.com/v1/test/getcrumb", accept = "*/*").trim()
+        check(fresh.isNotEmpty() && !fresh.contains(" ") && fresh.length < 40) { "Unexpected crumb response" }
+        crumb = fresh
+        return fresh
+    }
+
+    fun fetchQuoteStatistics(symbols: List<String>): Map<String, QuoteStatistics> {
+        if (symbols.isEmpty()) return emptyMap()
+        val joined = URLEncoder.encode(symbols.joinToString(",") { it.trim().uppercase() }, "UTF-8")
+        fun request(token: String): String = httpGet(
+            "https://query1.finance.yahoo.com/v7/finance/quote?symbols=$joined&crumb=" +
+                URLEncoder.encode(token, "UTF-8")
+        )
+        val body = runCatching { request(obtainCrumb(forceRefresh = false)) }
+            .getOrElse { request(obtainCrumb(forceRefresh = true)) }
+
+        val results = JSONObject(body).getJSONObject("quoteResponse").optJSONArray("result")
+            ?: return emptyMap()
+        val out = mutableMapOf<String, QuoteStatistics>()
+        for (i in 0 until results.length()) {
+            val q = results.getJSONObject(i)
+            val sym = q.optString("symbol").uppercase()
+            if (sym.isEmpty()) continue
+            out[sym] = QuoteStatistics(
+                marketCap = q.optDouble("marketCap", Double.NaN),
+                trailingPe = q.optDouble("trailingPE", Double.NaN),
+                postMarketPrice = q.optDouble("postMarketPrice", Double.NaN),
+                postMarketChangePercent = q.optDouble("postMarketChangePercent", Double.NaN),
+                averageVolume = q.optLong("averageDailyVolume3Month", 0L),
+                fiftyTwoWeekHigh = q.optDouble("fiftyTwoWeekHigh", Double.NaN),
+                fiftyTwoWeekLow = q.optDouble("fiftyTwoWeekLow", Double.NaN)
+            )
+        }
+        return out
+    }
+
+    private fun formatMarketCap(value: Double): String {
+        if (value.isNaN() || value <= 0.0) return "--"
+        return when {
+            value >= 1e12 -> String.format(Locale.US, "%.3fT", value / 1e12)
+            value >= 1e9 -> String.format(Locale.US, "%.1fB", value / 1e9)
+            value >= 1e6 -> String.format(Locale.US, "%.1fM", value / 1e6)
+            else -> String.format(Locale.US, "%.0f", value)
+        }
+    }
+
+    /** Real price history from Yahoo, or null if it couldn't be loaded. Failures aren't cached. */
+    fun fetchChartSeries(quote: StockQuote, range: ChartRange): StockChartSeries? {
         val key = cacheKey(quote.symbol, range)
         chartCache[key]?.let { return it }
 
@@ -411,11 +423,11 @@ object YahooFinanceClient {
             }
 
             if (rawPrices.size < 3) {
-                return@runCatching buildFallbackChartSeries(quote, range)
+                return@runCatching null
             }
 
             val baseline = if (range == ChartRange.ONE_DAY) {
-                meta.optDouble("chartPreviousClose", quote.previousClose).toFloat()
+                meta.optDouble("chartPreviousClose", rawPrices.first().toDouble()).toFloat()
             } else {
                 rawPrices.first()
             }
@@ -425,86 +437,16 @@ object YahooFinanceClient {
             StockChartSeries(
                 range = range,
                 prices = rawPrices,
-                volumes = if (rawVolumes.any { it > 0L }) rawVolumes else synthesizeVolumes(rawPrices.size),
+                volumes = if (rawVolumes.any { it > 0L }) rawVolumes else emptyList(),
                 baselinePrice = baseline,
                 xLabels = labels,
                 pointLabels = pointLabels
             )
-        }.getOrElse {
-            buildFallbackChartSeries(quote, range)
-        }
+        }.onFailure { Log.w(TAG, "Chart fetch failed for ${quote.symbol} ${range.label}", it) }
+            .getOrNull()
 
-        chartCache[key] = fetched
+        if (fetched != null) chartCache[key] = fetched
         return fetched
-    }
-
-    fun buildFallbackChartSeries(quote: StockQuote, range: ChartRange): StockChartSeries {
-        if (range == ChartRange.ONE_DAY && quote.sparkline.size >= 4) {
-            return StockChartSeries(
-                range = range,
-                prices = quote.sparkline,
-                volumes = synthesizeVolumes(quote.sparkline.size),
-                baselinePrice = quote.previousClose.toFloat(),
-                xLabels = listOf("2", "3", "4", "5", "6", "7"),
-                pointLabels = synthesizePointLabels(quote.sparkline.size, range)
-            )
-        }
-
-        val count = 48
-        val endPrice = quote.price.toFloat().coerceAtLeast(0.01f)
-        val driftFactor = when (range) {
-            ChartRange.ONE_DAY -> if (quote.isPositive) 0.992f else 1.008f
-            ChartRange.ONE_WEEK -> 0.982f
-            ChartRange.ONE_MONTH -> 0.955f
-            ChartRange.THREE_MONTHS -> 0.915f
-            ChartRange.SIX_MONTHS -> 0.875f
-            ChartRange.YTD -> 0.895f
-            ChartRange.ONE_YEAR -> 0.815f
-            ChartRange.TWO_YEARS -> 0.725f
-        }
-        val startPrice = endPrice * driftFactor
-        val amplitude = endPrice * when (range) {
-            ChartRange.ONE_DAY -> 0.008f
-            ChartRange.ONE_WEEK -> 0.015f
-            ChartRange.ONE_MONTH -> 0.024f
-            ChartRange.THREE_MONTHS -> 0.038f
-            ChartRange.SIX_MONTHS -> 0.052f
-            ChartRange.YTD -> 0.045f
-            ChartRange.ONE_YEAR -> 0.068f
-            ChartRange.TWO_YEARS -> 0.092f
-        }
-
-        val seed = quote.symbol.hashCode() + range.ordinal * 31
-        val points = mutableListOf<Float>()
-        for (i in 0 until count) {
-            val t = i.toFloat() / (count - 1).toFloat()
-            val linear = startPrice + (endPrice - startPrice) * t
-            val wave1 = sin((t * 6.283f * 2.3f) + (seed % 7)).toFloat() * amplitude * 0.55f
-            val wave2 = cos((t * 6.283f * 5.7f) + (seed % 13)).toFloat() * amplitude * 0.28f
-            val decay = (1f - t * 0.35f)
-            val value = if (i == count - 1) endPrice else (linear + (wave1 + wave2) * decay)
-            points.add(value.coerceAtLeast(endPrice * 0.2f))
-        }
-
-        val labels = when (range) {
-            ChartRange.ONE_DAY -> listOf("2", "3", "4", "5", "6", "7")
-            ChartRange.ONE_WEEK -> listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Today")
-            ChartRange.ONE_MONTH -> listOf("W1", "W2", "W3", "W4", "Now", "")
-            ChartRange.THREE_MONTHS -> listOf("Sep", "Oct", "Nov", "", "", "")
-            ChartRange.SIX_MONTHS -> listOf("Jun", "Jul", "Aug", "Sep", "Oct", "Nov")
-            ChartRange.YTD -> listOf("Jan", "Mar", "May", "Jul", "Sep", "Nov")
-            ChartRange.ONE_YEAR -> listOf("Jan", "Mar", "May", "Jul", "Sep", "Nov")
-            ChartRange.TWO_YEARS -> listOf("2025", "May", "Sep", "2026", "May", "Nov")
-        }
-
-        return StockChartSeries(
-            range = range,
-            prices = points,
-            volumes = synthesizeVolumes(points.size),
-            baselinePrice = startPrice,
-            xLabels = labels,
-            pointLabels = synthesizePointLabels(points.size, range)
-        )
     }
 
     private fun buildPointLabelsFromTimestamps(
@@ -513,7 +455,7 @@ object YahooFinanceClient {
         range: ChartRange
     ): List<String> {
         if (timestamps.size < count || timestamps.all { it <= 0L }) {
-            return synthesizePointLabels(count, range)
+            return List(count) { "" }
         }
         val fmt = when (range) {
             ChartRange.ONE_DAY -> SimpleDateFormat("h:mm a", Locale.US)
@@ -527,43 +469,10 @@ object YahooFinanceClient {
         }
     }
 
-    private fun synthesizePointLabels(count: Int, range: ChartRange): List<String> {
-        if (count <= 0) return emptyList()
-        val nowMs = System.currentTimeMillis()
-        val spanMs = when (range) {
-            ChartRange.ONE_DAY -> 6.5 * 3600_000.0
-            ChartRange.ONE_WEEK -> 5.0 * 86_400_000.0
-            ChartRange.ONE_MONTH -> 30.0 * 86_400_000.0
-            ChartRange.THREE_MONTHS -> 90.0 * 86_400_000.0
-            ChartRange.SIX_MONTHS -> 180.0 * 86_400_000.0
-            ChartRange.YTD -> 310.0 * 86_400_000.0
-            ChartRange.ONE_YEAR -> 365.0 * 86_400_000.0
-            ChartRange.TWO_YEARS -> 730.0 * 86_400_000.0
-        }
-        val fmt = when (range) {
-            ChartRange.ONE_DAY -> SimpleDateFormat("h:mm a", Locale.US)
-            ChartRange.ONE_WEEK -> SimpleDateFormat("EEE h:mm a", Locale.US)
-            ChartRange.ONE_MONTH, ChartRange.THREE_MONTHS -> SimpleDateFormat("d MMM", Locale.US)
-            ChartRange.SIX_MONTHS, ChartRange.YTD, ChartRange.ONE_YEAR, ChartRange.TWO_YEARS ->
-                SimpleDateFormat("d MMM yyyy", Locale.US)
-        }
-        val startMs = nowMs - spanMs.toLong()
-        return List(count) { i ->
-            val frac = if (count > 1) i.toDouble() / (count - 1).toDouble() else 1.0
-            val tsMs = startMs + (spanMs * frac).toLong()
-            fmt.format(Date(tsMs))
-        }
-    }
-
     private fun buildAxisLabelsFromTimestamps(timestamps: List<Long>, range: ChartRange): List<String> {
         val valid = timestamps.filter { it > 0L }
         if (valid.size < 6) {
-            return when (range) {
-                ChartRange.ONE_DAY -> listOf("2", "3", "4", "5", "6", "7")
-                ChartRange.ONE_WEEK -> listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Today")
-                ChartRange.ONE_MONTH -> listOf("1", "7", "14", "21", "28", "Now")
-                else -> listOf("Jan", "Mar", "May", "Jul", "Sep", "Nov")
-            }
+            return List(6) { "" }
         }
         val fmt = when (range) {
             ChartRange.ONE_DAY -> SimpleDateFormat("h", Locale.US)
@@ -578,15 +487,6 @@ object YahooFinanceClient {
             out.add(fmt.format(Date(valid[idx] * 1000L)))
         }
         return out
-    }
-
-    private fun synthesizeVolumes(size: Int): List<Long> {
-        val list = mutableListOf<Long>()
-        for (i in 0 until size) {
-            val spike = if (i == 0 || i == size / 2 || i == size - 3) 42L else (8L + (i * 7L) % 19L)
-            list.add(spike)
-        }
-        return list
     }
 
     fun searchSymbols(query: String): List<SearchSymbolResult> {
@@ -687,13 +587,13 @@ object YahooFinanceClient {
         }
     }
 
-    private fun httpGet(urlStr: String): String {
+    private fun httpGet(urlStr: String, accept: String = "application/json"): String {
         val conn = (URL(urlStr).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 7000
             readTimeout = 7000
             setRequestProperty("User-Agent", USER_AGENT)
-            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Accept", accept)
         }
         try {
             val code = conn.responseCode

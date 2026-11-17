@@ -37,4 +37,11 @@
     <string name="welcome_feature_widgets_body">Add widgets to your Home and Lock screens to keep an eye on prices without opening the app.</string>
     <string name="welcome_data_note">Market data provided by Yahoo Finance. Quotes may be delayed.</string>
     <string name="welcome_start">Start</string>
+
+    <!-- News tab and overflow menu -->
+    <string name="news_empty">News isn\'t available right now. Check your connection and try again later.</string>
+    <string name="menu_privacy_policy">Privacy Policy</string>
+    <string name="privacy_policy_url" translatable="false">https://github.com/CoenDoesGaming/samsung-stocks/blob/main/PRIVACY.md</string>
+    <string name="chart_loading">Loading chart…</string>
+    <string name="chart_unavailable">Chart unavailable. Check your connection.</string>
 </resources>

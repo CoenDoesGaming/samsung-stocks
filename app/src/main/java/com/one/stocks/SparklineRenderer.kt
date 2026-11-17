@@ -63,6 +63,8 @@ object SparklineRenderer {
         monochromeLockStyle: Boolean
     ) {
         if (width <= 4f || height <= 4f) return
+        // Nothing loaded yet: draw nothing rather than a made-up line.
+        if (points.size < 2) return
         val safePoints = if (points.size >= 2) points else listOf(previousClose, previousClose)
 
         var minVal = safePoints.minOrNull() ?: previousClose

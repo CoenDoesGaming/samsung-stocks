@@ -247,7 +247,11 @@ class MainActivity : AppCompatActivity() {
             tvPrice.text = quote.formattedPrice()
             tvBadge.text = quote.badgeText(badgeMode)
             tvBadge.setBackgroundResource(
-                if (quote.isPositive) R.drawable.bg_badge_green else R.drawable.bg_badge_red
+                when {
+                    quote.changePercent.isNaN() -> R.drawable.bg_badge_neutral
+                    quote.isPositive -> R.drawable.bg_badge_green
+                    else -> R.drawable.bg_badge_red
+                }
             )
 
             sparkline.setSparklineData(
@@ -327,7 +331,11 @@ class MainActivity : AppCompatActivity() {
             tvPrice.text = quote.formattedPrice()
             tvBadge.text = quote.formattedPercentChange()
             tvBadge.setBackgroundResource(
-                if (quote.isPositive) R.drawable.bg_badge_green else R.drawable.bg_badge_red
+                when {
+                    quote.changePercent.isNaN() -> R.drawable.bg_badge_neutral
+                    quote.isPositive -> R.drawable.bg_badge_green
+                    else -> R.drawable.bg_badge_red
+                }
             )
 
             sparkline.setSparklineData(
@@ -351,11 +359,25 @@ class MainActivity : AppCompatActivity() {
 
         val newsItems = StockPreferences.getNewsItems(this)
         newsFullContainer.removeAllViews()
+        if (newsItems.isEmpty()) {
+            newsFullContainer.addView(TextView(this).apply {
+                text = getString(R.string.news_empty)
+                setTextColor(Color.parseColor("#FF96ABA2"))
+                textSize = 14f
+                setPadding(0, dp(14), 0, dp(14))
+            })
+        }
         for (i in newsItems.indices) {
             newsFullContainer.addView(
                 createNewsRowView(newsItems[i], showDivider = i != newsItems.lastIndex)
             )
         }
+    }
+
+    private fun deltaColor(quote: StockQuote): Int = when {
+        quote.changePercent.isNaN() -> Color.parseColor("#FF8E8E93")
+        quote.isPositive -> Color.parseColor("#FF30D158")
+        else -> Color.parseColor("#FFFF453A")
     }
 
     private fun createNewsRowView(item: NewsItem, showDivider: Boolean): View {
@@ -530,6 +552,20 @@ class MainActivity : AppCompatActivity() {
             showChevron = true
         ) {
             showWatchlistShowsSheet()
+        }
+
+        addDivider()
+
+        // 4. Privacy Policy (opens in the browser)
+        addMenuRow(
+            iconRes = R.drawable.ic_privacy_shield,
+            title = getString(R.string.menu_privacy_policy)
+        ) {
+            runCatching {
+                startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.privacy_policy_url)))
+                )
+            }
         }
 
         popup.showAsDropDown(anchor, -popupWidth + anchor.width - dp(6), dp(6))
@@ -762,16 +798,10 @@ class MainActivity : AppCompatActivity() {
         }
         atCloseTopLine.addView(tvAtClosePrice)
 
-        val defaultBadgeText = if (quote.marketCapLabel != "--" && quote.marketCapLabel.isNotBlank()) {
-            quote.marketCapLabel
-        } else {
-            quote.formattedPercentChange()
-        }
+        val defaultBadgeText = quote.formattedPercentChange()
         val tvPrimaryDelta = TextView(this).apply {
             text = defaultBadgeText
-            setTextColor(
-                if (quote.isPositive) Color.parseColor("#FF30D158") else Color.parseColor("#FFFF453A")
-            )
+            setTextColor(deltaColor(quote))
             textSize = 15f
             setTypeface(typeface, Typeface.BOLD)
             setPadding(dp(8), 0, 0, 0)
@@ -834,7 +864,12 @@ class MainActivity : AppCompatActivity() {
             setTypeface(typeface, Typeface.BOLD)
             setPadding(0, dp(1), 0, 0)
         })
-        quotesRow.addView(afterHoursCol)
+        if (quote.hasExtendedHoursPrice) {
+            quotesRow.addView(afterHoursCol)
+        } else {
+            // Drop the divider added before this column too.
+            quotesRow.removeViewAt(quotesRow.childCount - 1)
+        }
         root.addView(quotesRow)
 
         // 3. Exchange & Currency Label (e.g., NASDAQ · USD)
@@ -878,9 +913,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     tvAtClosePrice.text = quote.formattedPrice()
                     tvPrimaryDelta.text = defaultBadgeText
-                    tvPrimaryDelta.setTextColor(
-                        if (quote.isPositive) Color.parseColor("#FF30D158") else Color.parseColor("#FFFF453A")
-                    )
+                    tvPrimaryDelta.setTextColor(deltaColor(quote))
                     tvAtCloseLabel.text = defaultAtCloseSubtitle
                 }
             }
@@ -919,19 +952,19 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
-            // Only show the cached 1D sparkline on initial sheet open while 1D loads
-            if (isInitialOpen && range == ChartRange.ONE_DAY) {
-                val initial1D = YahooFinanceClient.buildFallbackChartSeries(quote, ChartRange.ONE_DAY)
-                detailChartView.setChartSeries(initial1D, quote.isForex, quote.isPositive)
-            }
+            detailChartView.showMessage(getString(R.string.chart_loading))
 
             // Fetch real Yahoo Finance chart series for the selected timeframe in background
             chartExecutor.execute {
                 val liveSeries = YahooFinanceClient.fetchChartSeries(quote, range)
                 runOnUiThread {
                     if (dialog.isShowing && activeRange == range && requestGen == activeRequestGen) {
-                        val posOverride = if (range == ChartRange.ONE_DAY) quote.isPositive else null
-                        detailChartView.setChartSeries(liveSeries, quote.isForex, posOverride)
+                        if (liveSeries == null) {
+                            detailChartView.showMessage(getString(R.string.chart_unavailable))
+                        } else {
+                            val posOverride = if (range == ChartRange.ONE_DAY) quote.isPositive else null
+                            detailChartView.setChartSeries(liveSeries, quote.isForex, posOverride)
+                        }
                     }
                 }
             }
@@ -1039,7 +1072,7 @@ class MainActivity : AppCompatActivity() {
                 listOf(
                     "Vol." to quote.volumeLabel,
                     "P/E" to quote.peRatioLabel,
-                    "Mkt Cap" to if (quote.marketCapLabel != "--") quote.marketCapLabel else quote.formattedPercentChange()
+                    "Mkt Cap" to quote.marketCapLabel
                 )
             }
         )
